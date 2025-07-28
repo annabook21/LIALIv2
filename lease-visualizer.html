@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Lease Deal Visualized</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+        }
+
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            min-width: 320px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            color: #333;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .control-group input, .control-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #fff;
+            color: #333;
+            font-family: inherit;
+        }
+
+        .control-group .value {
+            font-size: 14px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        #info {
+            position: absolute;
+            bottom: 20px;
+            left: 360px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 400px;
+            color: white;
+        }
+
+        .mode-buttons {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+
+        .mode-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin-left: 5px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background 0.3s ease;
+        }
+
+        .mode-btn.active {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .mode-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        #backButton {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background 0.3s ease;
+        }
+
+        #backButton:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .legend {
+            position: absolute;
+            top: 120px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            color: white;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div class="mode-buttons">
+            <button class="mode-btn active" onclick="switchMode('breakdown')">Payment Breakdown</button>
+            <button class="mode-btn" onclick="switchMode('comparison')">Term Comparison</button>
+            <button class="mode-btn" onclick="switchMode('impact')">Rate Impact</button>
+        </div>
+
+        <div id="controls">
+            <h3>🎯 Your Deal Visualizer</h3>
+            <p style="font-size: 12px; color: #666; margin-bottom: 15px;">
+                Enter your real numbers to see your deal in 3D
+            </p>
+            
+            <div class="control-group">
+                <label>Monthly Payment Quote ($)</label>
+                <input type="number" id="monthlyPayment" placeholder="Enter monthly payment" step="1" onchange="updateVisualization()">
+            </div>
+            
+            <div class="control-group">
+                <label>MSRP ($)</label>
+                <input type="number" id="msrp" placeholder="Enter MSRP" step="1000" onchange="updateVisualization()">
+            </div>
+            
+            <div class="control-group">
+                <label>Rebates ($)</label>
+                <input type="number" id="rebates" value="0" step="100" onchange="updateVisualization()">
+            </div>
+            
+            <div class="control-group">
+                <label>Residual Value ($)</label>
+                <input type="number" id="residualValue" placeholder="Enter residual value" step="500" onchange="updateVisualization()">
+            </div>
+            
+            <div class="control-group">
+                <label>Lease Term</label>
+                <select id="leaseTerm" onchange="updateVisualization()">
+                    <option value="24">24 months</option>
+                    <option value="33">33 months</option>
+                    <option value="36" selected>36 months</option>
+                    <option value="48">48 months</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>Sales Tax Rate (%)</label>
+                <input type="number" id="taxRate" value="8.5" step="0.1" onchange="updateVisualization()">
+            </div>
+        </div>
+
+        <div class="legend" id="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4CAF50;"></div>
+                <span>Depreciation</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #2196F3;"></div>
+                <span>Finance Charge</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FF9800;"></div>
+                <span>Sales Tax</span>
+            </div>
+        </div>
+
+        <div id="info">
+            <div id="dealInfo">Loading your deal analysis...</div>
+        </div>
+
+        <a href="index.html" id="backButton">← Back to Calculator</a>
+    </div>
+
+    <script>
+        // Global variables
+        let scene, camera, renderer, controls;
+        let currentMode = 'breakdown';
+        let animationId;
+        let ambientLight, directionalLight;
+
+        // Initialize Three.js scene
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000020);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 15, 25);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('container').appendChild(renderer.domElement);
+
+            // Add lighting
+            ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            scene.add(ambientLight);
+
+            directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(20, 20, 20);
+            scene.add(directionalLight);
+
+            // Add mouse interaction event listeners
+            renderer.domElement.addEventListener('mousemove', onMouseMove);
+            renderer.domElement.addEventListener('click', onMouseClick);
+            
+            // Start animation loop
+            animate();
+            
+            // Initial visualization
+            updateVisualization();
+        }
+
+        // Calculate lease breakdown from user inputs (CORRECTED MATH)
+        function calculateLeaseBreakdown() {
+            const monthlyPayment = parseFloat(document.getElementById('monthlyPayment').value) || 0;
+            const msrp = parseFloat(document.getElementById('msrp').value) || 0;
+            const rebates = parseFloat(document.getElementById('rebates').value) || 0;
+            const residualValue = parseFloat(document.getElementById('residualValue').value) || 0;
+            const leaseTerm = parseInt(document.getElementById('leaseTerm').value) || 36;
+            const taxRate = (parseFloat(document.getElementById('taxRate').value) || 0) / 100;
+
+            console.log('Inputs:', {monthlyPayment, msrp, rebates, residualValue, leaseTerm, taxRate});
+
+            // Validate required inputs
+            if (!monthlyPayment || !msrp || !residualValue || !leaseTerm) {
+                console.log('Missing required inputs, returning default values');
+                return {
+                    monthlyPayment: 0,
+                    depreciation: 0,
+                    financeCharge: 0,
+                    salesTax: 0,
+                    capitalizedCost: 0,
+                    residualValue: 0,
+                    leaseTerm: 36,
+                    apr: 0,
+                    effectiveSellingPrice: 0,
+                    msrp: 0,
+                    rebates: 0,
+                    moneyFactor: 0,
+                    iterations: null
+                };
+            }
+
+            // Remove tax to get base payment
+            const basePayment = monthlyPayment / (1 + taxRate);
+            const salesTax = monthlyPayment - basePayment;
+            console.log('Base payment (no tax):', basePayment);
+            
+            // ***** Improved heuristic search (mirrors main calculator) *****
+            let bestMF = 0.003;  // default 7.2% APR
+            let bestError = Infinity;
+            let bestCapCost = 0;
+            let isUnrealistic = false;
+            for (let mf = 0.0004; mf <= 0.0125; mf += 0.00005) {
+                const apr = mf * 2400;
+                if (apr < 1.0 || apr > 30.0) continue;
+                // Solve cap cost directly for this MF
+                const capCost = (basePayment - residualValue * (mf - 1/leaseTerm)) / (1/leaseTerm + mf);
+                if (capCost < msrp * 0.3 || capCost > msrp * 2.0) continue;
+                // Calculate resulting payment
+                const calcDep = (capCost - residualValue) / leaseTerm;
+                const calcFin = (capCost + residualValue) * mf;
+                const calcPay = calcDep + calcFin;
+                const error = Math.abs(calcPay - basePayment);
+                // Penalties (APR and markup)
+                let aprPenalty = 1;
+                if (apr < 2.4 || apr > 10) aprPenalty = 2;
+                else if (apr < 3.0 || apr > 8.0) aprPenalty = 1.3;
+                const projectedSellingPrice = capCost + rebates; // Note: downPayment not included in visualizer (different from main calc)
+                let markupPenalty = 1;
+                if (projectedSellingPrice > msrp * 1.05) {
+                    markupPenalty += (projectedSellingPrice - msrp * 1.05) / msrp;
+                }
+                const adjustedError = error * aprPenalty * markupPenalty;
+                if (adjustedError < bestError) {
+                    bestError = adjustedError;
+                    bestMF = mf;
+                    bestCapCost = capCost;
+                }
+            }
+            
+            console.log('Best solution found:', {
+                bestMF,
+                bestAPR: bestMF * 2400,
+                bestCapCost,
+                bestError,
+                effectiveSellingPrice: bestCapCost + rebates
+            });
+            
+            let capitalizedCost = bestCapCost;
+            let moneyFactor = bestMF;
+            let calculationMethod = "Iterative (estimated)";
+
+            // Calculate preliminary APR (used in heuristics below)
+            let aprPre = moneyFactor * 2400;
+
+            // --- Heuristic: if iterative result produced unrealistically low APR but high markup, assume markup is really interest ---
+            if (aprPre < 2.4 && (capitalizedCost + rebates) > msrp) {
+                const assumedCapCost = Math.max(msrp - rebates, msrp * 0.9); // assume no markup, maybe small discount
+                const numerator = basePayment - (assumedCapCost - residualValue) / leaseTerm;
+                const denominator = assumedCapCost + residualValue;
+                const mfFromAssumed = numerator / denominator;
+                if (mfFromAssumed > 0 && mfFromAssumed <= 0.0125) {
+                    moneyFactor = mfFromAssumed;
+                    capitalizedCost = assumedCapCost;
+                    calculationMethod = 'Assumed MSRP (APR soaks markup)';
+                    aprPre = moneyFactor * 2400; // update
+                    console.log('Heuristic 1 applied - Assumed MSRP:', {
+                        newMF: moneyFactor,
+                        newAPR: aprPre,
+                        newCapCost: capitalizedCost
+                    });
+                }
+            }
+            
+            // --- Post-adjustment: if rebates exist and resulting selling price exceeds MSRP,
+            // re-compute money factor assuming dealer selling price = MSRP (no markup).
+            if (rebates > 0) {
+                const testCapCost = msrp - rebates;
+                if (testCapCost > 0) {
+                    const testMF = (basePayment - (testCapCost - residualValue) / leaseTerm) / (testCapCost + residualValue);
+                    const testAPR = testMF * 2400;
+                    if (testMF > 0.0004 && testMF < 0.0125 && testAPR >= 1 && testAPR <= 30) {
+                        // Use this alternative if it reduces or eliminates markup
+                        const altSellingPrice = msrp; // by construction
+                        const currentSelling = capitalizedCost + rebates;
+                        if (altSellingPrice <= msrp && altSellingPrice < currentSelling) {
+                            moneyFactor = testMF;
+                            capitalizedCost = testCapCost;
+                            calculationMethod = "Rebate-adjusted (assumed MSRP)";
+                            console.log('Heuristic 2 applied - Rebate adjustment:', {
+                                newMF: moneyFactor,
+                                newAPR: testAPR,
+                                newCapCost: capitalizedCost
+                            });
+                        }
+                    }
+                }
+            }
+            // ***************************************************************
+            
+            // Final calculations with selected values
+            const depreciation = (capitalizedCost - residualValue) / leaseTerm;
+            const financeCharge = (capitalizedCost + residualValue) * moneyFactor;
+            const apr = moneyFactor * 2400;
+            const effectiveSellingPrice = capitalizedCost + rebates;
+            
+            // Verify calculation
+            const calculatedBase = depreciation + financeCharge;
+            const calculationError = Math.abs(calculatedBase - basePayment);
+            
+            console.log(`Search error: $${calculationError.toFixed(4)}`);
+            
+            return {
+                monthlyPayment,
+                depreciation,
+                financeCharge,
+                salesTax,
+                capitalizedCost,
+                residualValue,
+                leaseTerm,
+                apr,
+                effectiveSellingPrice,
+                msrp,
+                rebates,
+                moneyFactor,
+                iterations: null,
+                calculationError
+            };
+        }
+
+        // Create much clearer payment breakdown visualization
+        function createBreakdownVisualization() {
+            clearScene();
+            
+            try {
+                const breakdown = calculateLeaseBreakdown();
+                console.log('Payment breakdown data:', breakdown);
+
+                // Create clearer 3D pie chart with better proportions
+                const components = [
+                    { name: 'Depreciation', value: breakdown.depreciation, color: 0x4CAF50, description: 'Cost of vehicle losing value' },
+                    { name: 'Finance Charge', value: breakdown.financeCharge, color: 0x2196F3, description: 'Interest on the money borrowed' },
+                    { name: 'Sales Tax', value: breakdown.salesTax, color: 0xFF9800, description: 'Government tax on the lease' }
+                ];
+
+                const total = components.reduce((sum, comp) => sum + comp.value, 0);
+                let currentAngle = 0;
+                const radius = 6;
+                const height = 1.5;
+                
+                components.forEach((comp, index) => {
+                    const percentage = comp.value / total;
+                    const sweepAngle = Math.max(percentage * Math.PI * 2, 0.1); // Minimum visible slice
+                    
+                    // Create 3D pie slice with better visibility
+                    const geometry = new THREE.CylinderGeometry(radius, radius, height, 32, 1, false, currentAngle, sweepAngle);
+                    const material = new THREE.MeshPhongMaterial({ 
+                        color: comp.color,
+                        transparent: false,
+                        shininess: 30
+                    });
+                    
+                    const slice = new THREE.Mesh(geometry, material);
+                    slice.userData = { 
+                        component: comp,
+                        percentage: percentage,
+                        originalPosition: { x: 0, y: 0, z: 0 },
+                        isExpanded: false
+                    };
+                    
+                    scene.add(slice);
+                    clickableObjects.push(slice);
+                    
+                    // Create much clearer floating labels with better positioning
+                    const labelAngle = currentAngle + sweepAngle / 2;
+                    const labelRadius = radius + 4;
+                    const labelX = Math.cos(labelAngle) * labelRadius;
+                    const labelZ = Math.sin(labelAngle) * labelRadius;
+                    
+                    createClearPieLabel(comp.name, comp.value, percentage, labelX, 2, labelZ, comp.color);
+                    
+                    // Animate appearance
+                    slice.scale.set(0.1, 0.1, 0.1);
+                    animatePieSlice(slice, null, index * 400);
+                    
+                    currentAngle += sweepAngle;
+                });
+
+                // Create much clearer center info display
+                createClearCenterInfo(breakdown);
+                
+                // Update info panel
+                updateInfoPanel(breakdown);
+                
+            } catch (error) {
+                console.error('Error in createBreakdownVisualization:', error);
+                // Fallback to simple bars if pie chart fails
+                createSimpleBars();
+            }
+        }
+        
+        // Fallback visualization
+        function createSimpleBars() {
+            const breakdown = calculateLeaseBreakdown();
+            const components = [
+                { name: 'Depreciation', value: breakdown.depreciation, color: 0x4CAF50, x: -4 },
+                { name: 'Finance', value: breakdown.financeCharge, color: 0x2196F3, x: 0 },
+                { name: 'Tax', value: breakdown.salesTax, color: 0xFF9800, x: 4 }
+            ];
+
+            components.forEach(comp => {
+                const height = Math.max(comp.value / 50, 0.5);
+                const geometry = new THREE.BoxGeometry(2, height, 2);
+                const material = new THREE.MeshPhongMaterial({ color: comp.color });
+                const bar = new THREE.Mesh(geometry, material);
+                bar.position.set(comp.x, height / 2, 0);
+                scene.add(bar);
+            });
+            
+            updateInfoPanel(breakdown);
+        }
+
+        // Create much clearer term comparison visualization
+        function createComparisonVisualization() {
+            clearScene();
+            
+            try {
+                const baseBreakdown = calculateLeaseBreakdown();
+                const currentTerm = baseBreakdown.leaseTerm;
+                const terms = [24, 36, 48];
+                const results = [];
+                
+                // Calculate payment for each term using same inputs
+                terms.forEach((term, index) => {
+                    const taxRate = parseFloat(document.getElementById('taxRate').value) / 100;
+                    const capitalizedCost = baseBreakdown.capitalizedCost;
+                    const residualValue = baseBreakdown.residualValue;
+                    
+                    // Calculate monthly payment for this term (using same money factor)
+                    const depreciation = (capitalizedCost - residualValue) / term;
+                    const financeCharge = (capitalizedCost + residualValue) * baseBreakdown.moneyFactor;
+                    const basePayment = depreciation + financeCharge;
+                    const monthlyPayment = basePayment * (1 + taxRate);
+                    const totalCost = monthlyPayment * term;
+                    
+                    results.push({
+                        term,
+                        monthlyPayment,
+                        totalCost,
+                        isSelected: term === currentTerm
+                    });
+                });
+                
+                // Find max values for consistent scaling
+                const maxMonthly = Math.max(...results.map(r => r.monthlyPayment));
+                const maxTotal = Math.max(...results.map(r => r.totalCost));
+                
+                results.forEach((result, index) => {
+                    const isSelected = result.term === currentTerm;
+                    const xPos = (index - 1) * 10; // More spacing
+                    
+                    // Monthly payment bars (left side of each group)
+                    const monthlyHeight = (result.monthlyPayment / maxMonthly) * 8; // Consistent scale
+                    const monthlyGeometry = new THREE.BoxGeometry(3, monthlyHeight, 3);
+                    const monthlyMaterial = new THREE.MeshPhongMaterial({ 
+                        color: isSelected ? 0x4CAF50 : 0x2196F3,
+                        transparent: false,
+                        wireframe: false
+                    });
+                    const monthlyBar = new THREE.Mesh(monthlyGeometry, monthlyMaterial);
+                    monthlyBar.position.set(xPos - 2, monthlyHeight / 2, 0);
+                    
+                    // Total cost bars (right side of each group)
+                    const totalHeight = (result.totalCost / maxTotal) * 8; // Consistent scale
+                    const totalGeometry = new THREE.BoxGeometry(3, totalHeight, 3);
+                    const totalMaterial = new THREE.MeshPhongMaterial({ 
+                        color: isSelected ? 0xFF9800 : 0x9C27B0,
+                        transparent: false,
+                        wireframe: false
+                    });
+                    const totalBar = new THREE.Mesh(totalGeometry, totalMaterial);
+                    totalBar.position.set(xPos + 2, totalHeight / 2, 0);
+                    
+                    scene.add(monthlyBar);
+                    scene.add(totalBar);
+                    
+                    // Clear, positioned labels
+                    createComparisonLabel(
+                        `${result.term} months`,
+                        `$${result.monthlyPayment.toFixed(0)}/mo`,
+                        `$${result.totalCost.toFixed(0)} total`,
+                        xPos, 
+                        Math.max(monthlyHeight, totalHeight) + 1,
+                        isSelected
+                    );
+                    
+                    // Animate bars
+                    monthlyBar.scale.y = 0;
+                    totalBar.scale.y = 0;
+                    animateBar(monthlyBar, 1, index * 300);
+                    animateBar(totalBar, 1, index * 300 + 150);
+                });
+                
+                // Add clear category labels
+                createCategoryLabel("Monthly Payment", -2, -2);
+                createCategoryLabel("Total Cost", 2, -2);
+                
+                // Update info panel with comparison data
+                updateComparisonInfo(results, baseBreakdown.apr);
+                
+            } catch (error) {
+                console.error('Error in createComparisonVisualization:', error);
+            }
+        }
+
+        // Create much clearer rate impact visualization
+        function createImpactVisualization() {
+            clearScene();
+            
+            try {
+                const baseBreakdown = calculateLeaseBreakdown();
+                const currentAPR = baseBreakdown.apr;
+                
+                                // Show realistic 2024/2025 market rates with clear differences
+                const rateScenarios = [
+                    { apr: 3.0, label: "Excellent", sublabel: "750+ Credit", color: 0x4CAF50 },
+                    { apr: 5.5, label: "Good", sublabel: "700-750 Credit", color: 0x2196F3 },
+                    { apr: 8.5, label: "Fair", sublabel: "640-700 Credit", color: 0xFF9800 },
+                    { apr: 12.0, label: "Poor", sublabel: "Below 640", color: 0xFF5722 },
+                    { apr: currentAPR, label: "Your Rate", sublabel: "Your Deal", color: 0x00FF00, isYourRate: true }
+                ];
+
+                const results = [];
+                let maxPayment = 0;
+                
+                // Calculate all payments first to find max for scaling
+                rateScenarios.forEach((scenario) => {
+                    const moneyFactor = scenario.apr / 2400;
+                    const taxRate = parseFloat(document.getElementById('taxRate').value) / 100;
+                    
+                    const depreciation = (baseBreakdown.capitalizedCost - baseBreakdown.residualValue) / baseBreakdown.leaseTerm;
+                    const financeCharge = (baseBreakdown.capitalizedCost + baseBreakdown.residualValue) * moneyFactor;
+                    const basePayment = depreciation + financeCharge;
+                    const monthlyPayment = basePayment * (1 + taxRate);
+                    
+                    maxPayment = Math.max(maxPayment, monthlyPayment);
+                    
+                    results.push({
+                        ...scenario,
+                        monthlyPayment,
+                        isYourRate: scenario.isYourRate || false
+                    });
+                });
+                
+                // Sort results to put user's rate in a logical position
+                results.sort((a, b) => a.apr - b.apr);
+                
+                // Create bars with consistent scaling and clear labels
+                results.forEach((result, index) => {
+                    const height = (result.monthlyPayment / maxPayment) * 8; // Consistent scale
+                    const xPos = (index - 2) * 8; // Better spacing for 5 bars
+                    
+                    const geometry = new THREE.BoxGeometry(3, height, 3);
+                    const material = new THREE.MeshPhongMaterial({ 
+                        color: result.isYourRate ? 0x00FF00 : result.color,
+                        transparent: false,
+                        shininess: 30
+                    });
+                    const bar = new THREE.Mesh(geometry, material);
+                    bar.position.set(xPos, height / 2, 0);
+                    
+                    scene.add(bar);
+                    
+                    // Add clear labels with payment amounts
+                    createRateImpactLabel(
+                        result.label,
+                        result.sublabel,
+                        `${result.apr.toFixed(2)}% APR`,
+                        `$${result.monthlyPayment.toFixed(0)}/mo`,
+                        xPos,
+                        height + 1,
+                        result.isYourRate,
+                        result.color
+                    );
+                    
+                    // Animate bar growth
+                    bar.scale.y = 0;
+                    animateBar(bar, 1, index * 250);
+                });
+                
+                // User's rate is now always included as its own bar
+                
+                // Update info panel with rate comparison data
+                updateRateImpactInfo(results, currentAPR);
+                
+            } catch (error) {
+                console.error('Error in createImpactVisualization:', error);
+            }
+        }
+
+        // Animation functions
+        let clickableObjects = [];
+        
+        function animateBar(bar, targetScale, delay) {
+            setTimeout(() => {
+                const animate = () => {
+                    if (bar.scale.y < targetScale) {
+                        bar.scale.y += 0.02;
+                        requestAnimationFrame(animate);
+                    }
+                };
+                animate();
+            }, delay);
+        }
+        
+        function animatePieSlice(slice, partner, delay) {
+            setTimeout(() => {
+                const animate = () => {
+                    if (slice.scale.x < 1) {
+                        const scale = Math.min(slice.scale.x + 0.05, 1);
+                        slice.scale.set(scale, scale, scale);
+                        if (partner) {
+                            partner.scale.set(scale, scale, scale);
+                        }
+                        requestAnimationFrame(animate);
+                    }
+                };
+                animate();
+            }, delay);
+        }
+        
+        function createFloatingLabel(text, value, angle, radius, percentage) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 256;
+            canvas.height = 128;
+            
+            context.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.strokeStyle = '#333';
+            context.strokeRect(0, 0, canvas.width, canvas.height);
+            
+            context.fillStyle = '#333';
+            context.font = 'bold 20px Arial';
+            context.textAlign = 'center';
+            context.fillText(text, canvas.width / 2, 40);
+            context.font = '16px Arial';
+            context.fillText(`$${value.toFixed(0)}`, canvas.width / 2, 70);
+            context.fillText(`${(percentage * 100).toFixed(1)}%`, canvas.width / 2, 95);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(material);
+            
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            sprite.position.set(x, y, 1);
+            sprite.scale.set(4, 2, 1);
+            
+            scene.add(sprite);
+        }
+        
+        function createCenterInfo(breakdown) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 300;
+            canvas.height = 200;
+            
+            context.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            
+            context.fillStyle = '#fff';
+            context.font = 'bold 24px Arial';
+            context.textAlign = 'center';
+            context.fillText(`$${breakdown.monthlyPayment.toFixed(0)}`, canvas.width / 2, 60);
+            context.font = '16px Arial';
+            context.fillText('Total Monthly', canvas.width / 2, 85);
+            context.fillText(`${breakdown.apr.toFixed(2)}% APR`, canvas.width / 2, 125);
+            context.fillText(`${breakdown.leaseTerm} months`, canvas.width / 2, 150);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.set(0, 0, 0.1);
+            sprite.scale.set(6, 4, 1);
+            
+            scene.add(sprite);
+        }
+        
+        function createClearCenterInfo(breakdown) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 960; // 3x higher resolution
+            canvas.height = 480; // 3x higher resolution
+            
+            // Clear background with border
+            context.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.strokeStyle = '#333';
+            context.lineWidth = 6; // Scale up border
+            context.strokeRect(0, 0, canvas.width, canvas.height);
+            
+            context.fillStyle = '#333';
+            context.textAlign = 'center';
+            
+            // Main payment amount - 3x font sizes
+            context.font = 'bold 84px Arial';
+            context.fillText(`$${breakdown.monthlyPayment.toFixed(0)}`, canvas.width / 2, 135);
+            
+            // Label
+            context.font = 'bold 42px Arial';
+            context.fillText('Total Monthly Payment', canvas.width / 2, 210);
+            
+            // Key details
+            context.font = '36px Arial';
+            context.fillText(`${breakdown.apr.toFixed(2)}% APR • ${breakdown.leaseTerm} months`, canvas.width / 2, 285);
+            
+            // Breakdown summary
+            context.font = '33px Arial';
+            context.fillText(`Depreciation: $${breakdown.depreciation.toFixed(0)} • Finance: $${breakdown.financeCharge.toFixed(0)} • Tax: $${breakdown.salesTax.toFixed(0)}`, canvas.width / 2, 360);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.set(0, 3, 0.1);
+            sprite.scale.set(5, 2.5, 1);
+            
+            scene.add(sprite);
+            hoverableLabels.push(sprite); // Add to hoverable labels
+        }
+        
+        function createClearPieLabel(name, value, percentage, x, y, z, color) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 600; // 3x higher resolution
+            canvas.height = 240; // 3x higher resolution
+            
+            // Create colored background matching the pie slice
+            const hexColor = '#' + color.toString(16).padStart(6, '0');
+            context.fillStyle = hexColor;
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Add border
+            context.strokeStyle = '#333';
+            context.lineWidth = 6; // Scale up border
+            context.strokeRect(0, 0, canvas.width, canvas.height);
+            
+            // White text for visibility
+            context.fillStyle = '#fff';
+            context.textAlign = 'center';
+            context.shadowColor = 'rgba(0, 0, 0, 0.8)';
+            context.shadowBlur = 6; // Scale up shadow
+            
+            // Component name - 3x font sizes
+            context.font = 'bold 48px Arial';
+            context.fillText(name, canvas.width / 2, 75);
+            
+            // Value and percentage
+            context.font = '42px Arial';
+            context.fillText(`$${value.toFixed(0)}`, canvas.width / 2, 135);
+            context.font = 'bold 42px Arial';
+            context.fillText(`${(percentage * 100).toFixed(1)}%`, canvas.width / 2, 195);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.set(x, y, z);
+            sprite.scale.set(3, 1.5, 1);
+            
+            scene.add(sprite);
+            hoverableLabels.push(sprite); // Add to hoverable labels
+        }
+        
+        function createTimelineLabel(text, x, y) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 150;
+            canvas.height = 60;
+            
+            context.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.strokeStyle = '#333';
+            context.strokeRect(0, 0, canvas.width, canvas.height);
+            
+            context.fillStyle = '#333';
+            context.font = 'bold 16px Arial';
+            context.textAlign = 'center';
+            context.fillText(text, canvas.width / 2, 35);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.set(x, y, 0);
+            sprite.scale.set(3, 1.2, 1);
+            
+            scene.add(sprite);
+        }
+        
+        function createTermLabel(text, x, y) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 120;
+            canvas.height = 50;
+            
+            context.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.strokeStyle = '#333';
+            context.strokeRect(0, 0, canvas.width, canvas.height);
+            
+            context.fillStyle = '#333';
+            context.font = 'bold 14px Arial';
+            context.textAlign = 'center';
+            context.fillText(text, canvas.width / 2, 30);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.set(x, y, 0);
+            sprite.scale.set(2.5, 1, 1);
+            
+            scene.add(sprite);
+        }
+        
+        function createComparisonLabel(term, monthly, total, x, y, isSelected) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 600; // 3x higher resolution
+            canvas.height = 300; // 3x higher resolution
+            
+            // Background with highlight for selected term
+            context.fillStyle = isSelected ? 'rgba(76, 175, 80, 0.2)' : 'rgba(255, 255, 255, 0.9)';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.strokeStyle = isSelected ? '#4CAF50' : '#333';
+            context.lineWidth = isSelected ? 9 : 3; // Scale up stroke width
+            context.strokeRect(0, 0, canvas.width, canvas.height);
+            
+            context.fillStyle = isSelected ? '#2E7D32' : '#333';
+            context.textAlign = 'center';
+            
+            // Term label - 3x font sizes for higher resolution
+            context.font = 'bold 48px Arial';
+            context.fillText(term, canvas.width / 2, 75);
+            
+            // Monthly payment
+            context.font = '42px Arial';
+            context.fillText(monthly, canvas.width / 2, 150);
+            
+            // Total cost
+            context.font = '36px Arial';
+            context.fillText(total, canvas.width / 2, 225);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.set(x, y, 0);
+            sprite.scale.set(4, 2, 1);
+            
+            scene.add(sprite);
+            hoverableLabels.push(sprite); // Add to hoverable labels
+        }
+        
+        function createCategoryLabel(text, x, y) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 450; // 3x higher resolution
+            canvas.height = 120; // 3x higher resolution
+            
+            context.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            
+            context.fillStyle = '#fff';
+            context.font = 'bold 42px Arial'; // 3x font size
+            context.textAlign = 'center';
+            context.fillText(text, canvas.width / 2, 75);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.set(x, y, 0);
+            sprite.scale.set(3, 0.8, 1);
+            
+            scene.add(sprite);
+            hoverableLabels.push(sprite); // Add to hoverable labels
+        }
+        
+        function createRateImpactLabel(label, sublabel, apr, payment, x, y, isYourRate, color) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 480; // 3x higher resolution
+            canvas.height = 360; // 3x higher resolution
+            
+            // Background color
+            if (isYourRate) {
+                context.fillStyle = 'rgba(0, 255, 0, 0.3)';
+            } else {
+                const hexColor = '#' + color.toString(16).padStart(6, '0');
+                context.fillStyle = hexColor + '30'; // Add transparency
+            }
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Border
+            context.strokeStyle = isYourRate ? '#00FF00' : '#333';
+            context.lineWidth = isYourRate ? 9 : 3; // Scale up border
+            context.strokeRect(0, 0, canvas.width, canvas.height);
+            
+            context.fillStyle = '#333';
+            context.textAlign = 'center';
+            
+            // Credit rating - 3x font sizes
+            context.font = 'bold 42px Arial';
+            context.fillText(label, canvas.width / 2, 60);
+            
+            // Credit score range
+            context.font = '33px Arial';
+            context.fillText(sublabel, canvas.width / 2, 105);
+            
+            // APR
+            context.font = 'bold 36px Arial';
+            context.fillText(apr, canvas.width / 2, 165);
+            
+            // Monthly payment
+            context.font = 'bold 42px Arial';
+            context.fillText(payment, canvas.width / 2, 240);
+            
+            // "Your Rate" indicator
+            if (isYourRate) {
+                context.font = 'bold 33px Arial';
+                context.fillStyle = '#2E7D32';
+                context.fillText('← YOUR RATE', canvas.width / 2, 300);
+            }
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.set(x, y, 0);
+            sprite.scale.set(3, 2.2, 1);
+            
+            scene.add(sprite);
+            hoverableLabels.push(sprite); // Add to hoverable labels
+        }
+        
+        function createYourRateIndicator(yourAPR, yourPayment) {
+            // Create a special indicator for rates that don't fit standard categories
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 600; // 3x higher resolution
+            canvas.height = 300; // 3x higher resolution
+            
+            context.fillStyle = 'rgba(0, 255, 0, 0.9)';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.strokeStyle = '#00FF00';
+            context.lineWidth = 9; // Scale up border
+            context.strokeRect(0, 0, canvas.width, canvas.height);
+            
+            context.fillStyle = '#000';
+            context.textAlign = 'center';
+            context.font = 'bold 48px Arial'; // 3x font sizes
+            context.fillText('YOUR ACTUAL RATE', canvas.width / 2, 75);
+            context.font = 'bold 42px Arial';
+            context.fillText(`${yourAPR.toFixed(2)}% APR`, canvas.width / 2, 150);
+            context.fillText(`$${yourPayment.toFixed(0)}/month`, canvas.width / 2, 225);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.set(0, 6, 0);
+            sprite.scale.set(4, 2, 1);
+            
+            scene.add(sprite);
+            hoverableLabels.push(sprite); // Add to hoverable labels
+        }
+        
+
+
+        // Update info panel
+        function updateInfoPanel(breakdown) {
+            const info = document.getElementById('dealInfo');
+            const discountAmount = breakdown.msrp - breakdown.effectiveSellingPrice;
+            const discountPercent = (discountAmount / breakdown.msrp * 100);
+            
+            info.innerHTML = `
+                <strong>🔍 Reverse-Calculated Analysis:</strong><br>
+                Monthly Payment: $${breakdown.monthlyPayment.toFixed(0)}<br>
+                • Depreciation: $${breakdown.depreciation.toFixed(0)}<br>
+                • Finance Charge: $${breakdown.financeCharge.toFixed(0)}<br>
+                • Sales Tax: $${breakdown.salesTax.toFixed(0)}<br><br>
+                <strong>What They're Really Charging:</strong><br>
+                APR: ${breakdown.apr.toFixed(2)}% (MF: ${breakdown.moneyFactor.toFixed(6)})<br>
+                Selling Price: $${breakdown.effectiveSellingPrice.toFixed(0)}<br>
+                ${discountAmount > 0 ? 
+                    `Discount: $${discountAmount.toFixed(0)} (${discountPercent.toFixed(1)}% off MSRP)` :
+                    `<span style="color: #ff5722;">Markup: $${Math.abs(discountAmount).toFixed(0)} above MSRP!</span>`
+                }<br>
+                Total Lease Cost: $${(breakdown.monthlyPayment * breakdown.leaseTerm).toFixed(0)}<br>
+                <div style="font-size: 11px; color: #666; margin-top: 8px;">
+                    Converged in ${breakdown.iterations} iterations
+                </div>
+            `;
+        }
+
+        // Update comparison info panel
+        function updateComparisonInfo(results, userAPR) {
+            const info = document.getElementById('dealInfo');
+                            let html = `<strong>📊 Term Comparison (Using Your ${userAPR.toFixed(2)}% APR):</strong><br>`;
+            
+            results.forEach(result => {
+                const highlight = result.isSelected ? ' style="color: #4CAF50; font-weight: bold;"' : '';
+                html += `<span${highlight}>${result.term} months: $${result.monthlyPayment.toFixed(0)}/mo → $${result.totalCost.toFixed(0)} total</span><br>`;
+            });
+            
+            const savings = results[0].totalCost - results[2].totalCost;
+            html += `<br><strong>Insight:</strong> 24-month saves $${Math.abs(savings).toFixed(0)} vs 48-month but costs $${(results[0].monthlyPayment - results[2].monthlyPayment).toFixed(0)}/mo more`;
+            
+            info.innerHTML = html;
+        }
+
+        // Update rate impact info panel
+        function updateRateImpactInfo(results, currentAPR) {
+            const info = document.getElementById('dealInfo');
+            let html = '<strong>⚡ Rate Impact Analysis:</strong><br>';
+            
+            results.forEach(result => {
+                const highlight = result.isYourRate ? ' style="color: #00FF00; font-weight: bold;"' : '';
+                html += `<span${highlight}>${result.label}: ${result.apr.toFixed(2)}% APR → $${result.monthlyPayment.toFixed(0)}/mo</span><br>`;
+            });
+            
+            html += `<br><strong>Your Rate:</strong> ${currentAPR.toFixed(2)}% APR<br>`;
+            
+            const bestRate = results[0];
+            const worstRate = results[3];
+            const monthlySavings = worstRate.monthlyPayment - bestRate.monthlyPayment;
+            html += `<strong>Potential:</strong> Best rate saves $${monthlySavings.toFixed(0)}/mo vs worst rate`;
+            
+            info.innerHTML = html;
+        }
+
+        // Switch visualization modes
+        function switchMode(mode) {
+            console.log('Switching to mode:', mode);
+            currentMode = mode;
+            
+            // Update button states
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // Find and activate the correct button
+            const buttons = document.querySelectorAll('.mode-btn');
+            if (mode === 'breakdown') buttons[0].classList.add('active');
+            else if (mode === 'comparison') buttons[1].classList.add('active');
+            else if (mode === 'impact') buttons[2].classList.add('active');
+            
+            updateVisualization();
+        }
+
+        // Update visualization based on current mode and inputs
+        function updateVisualization() {
+            console.log('Updating visualization for mode:', currentMode);
+            try {
+                switch(currentMode) {
+                    case 'breakdown':
+                        createBreakdownVisualization();
+                        updateLegend('breakdown');
+                        break;
+                    case 'comparison':
+                        createComparisonVisualization();
+                        updateLegend('comparison');
+                        break;
+                    case 'impact':
+                        createImpactVisualization();
+                        updateLegend('impact');
+                        break;
+                    default:
+                        console.log('Unknown mode, defaulting to breakdown');
+                        createBreakdownVisualization();
+                        updateLegend('breakdown');
+                }
+            } catch (error) {
+                console.error('Error updating visualization:', error);
+            }
+        }
+
+        // Update legend based on current mode
+        function updateLegend(mode) {
+            const legend = document.getElementById('legend');
+            
+            switch(mode) {
+                case 'breakdown':
+                    legend.innerHTML = `
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #4CAF50;"></div>
+                            <span>Depreciation</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #2196F3;"></div>
+                            <span>Finance Charge</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #FF9800;"></div>
+                            <span>Sales Tax</span>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 11px; color: #ccc;">
+                            💡 Click slices to expand<br>
+                            🖱️ Hover for details
+                        </div>
+                    `;
+                    break;
+                case 'comparison':
+                    legend.innerHTML = `
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #2196F3;"></div>
+                            <span>Monthly Payment</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #9C27B0;"></div>
+                            <span>Total Cost</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #4CAF50;"></div>
+                            <span>Your Selected Term</span>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 11px; color: #ccc;">
+                            💰 Blue: Monthly payment bars<br>
+                            📊 Purple: Total cost bars
+                        </div>
+                    `;
+                    break;
+                case 'impact':
+                    legend.innerHTML = `
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #4CAF50;"></div>
+                            <span>Excellent Credit (3.0%)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #2196F3;"></div>
+                            <span>Good Credit (5.5%)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #FF9800;"></div>
+                            <span>Fair Credit (8.5%)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #FF5722;"></div>
+                            <span>Poor Credit (12%)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #00FF00;"></div>
+                            <span>Your Calculated Rate</span>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 11px; color: #ccc;">
+                            💡 Height = Monthly payment<br>
+                            🎯 Green highlights your rate
+                        </div>
+                    `;
+                    break;
+                case 'comparison':
+                    legend.innerHTML = `
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #4CAF50;"></div>
+                            <span>Your Selected Term</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #2196F3;"></div>
+                            <span>Other Terms</span>
+                        </div>
+                        <div style="font-size: 11px; color: #ccc; margin-top: 8px;">
+                            Height = Total Cost
+                        </div>
+                    `;
+                    break;
+                case 'impact':
+                    legend.innerHTML = `
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #4CAF50;"></div>
+                            <span>Excellent Credit</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #2196F3;"></div>
+                            <span>Good Credit</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #FF9800;"></div>
+                            <span>Fair Credit</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #FF5722;"></div>
+                            <span>Poor Credit</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #00FF00;"></div>
+                            <span>Your Rate</span>
+                        </div>
+                    `;
+                    break;
+            }
+        }
+
+        // Clear scene and reset interactions
+        function clearScene() {
+            // Remove all objects except lights
+            const objectsToRemove = [];
+            scene.traverse(child => {
+                if (child !== ambientLight && child !== directionalLight && child.type !== 'Scene') {
+                    objectsToRemove.push(child);
+                }
+            });
+            objectsToRemove.forEach(obj => scene.remove(obj));
+            
+            // Clear clickable objects and hoverable labels arrays
+            clickableObjects = [];
+            hoverableLabels = [];
+        }
+        
+        // Animate label scaling on hover
+        function animateLabelScale(label, targetScale, duration) {
+            if (!label.userData.originalScale) {
+                label.userData.originalScale = { x: label.scale.x, y: label.scale.y, z: label.scale.z };
+            }
+            
+            const startScale = { x: label.scale.x, y: label.scale.y, z: label.scale.z };
+            const endScale = {
+                x: label.userData.originalScale.x * targetScale,
+                y: label.userData.originalScale.y * targetScale,
+                z: label.userData.originalScale.z * targetScale
+            };
+            
+            const startTime = Date.now();
+            
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Ease-out animation
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                
+                label.scale.x = startScale.x + (endScale.x - startScale.x) * easeProgress;
+                label.scale.y = startScale.y + (endScale.y - startScale.y) * easeProgress;
+                label.scale.z = startScale.z + (endScale.z - startScale.z) * easeProgress;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+            
+            animate();
+        }
+        
+        // Mouse interaction setup
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let hoveredObject = null;
+        let hoveredLabel = null;
+        let hoverableLabels = [];
+        
+        function onMouseMove(event) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            
+            // Check for clickable objects first
+            const intersects = raycaster.intersectObjects(clickableObjects);
+            
+            // Reset hover state for objects
+            if (hoveredObject) {
+                hoveredObject.material.emissive.setHex(0x000000);
+                hoveredObject = null;
+                renderer.domElement.style.cursor = 'default';
+            }
+            
+            // Reset hover state for labels
+            if (hoveredLabel) {
+                animateLabelScale(hoveredLabel, 1.0, 200); // Scale back to normal
+                hoveredLabel = null;
+            }
+            
+            if (intersects.length > 0) {
+                hoveredObject = intersects[0].object;
+                hoveredObject.material.emissive.setHex(0x333333);
+                renderer.domElement.style.cursor = 'pointer';
+                
+                // Show tooltip for pie chart segments
+                if (hoveredObject.userData.component) {
+                    showTooltip(event, hoveredObject.userData);
+                }
+            } else {
+                hideTooltip();
+                
+                                 // Check for hoverable labels
+                 const labelIntersects = raycaster.intersectObjects(hoverableLabels);
+                 if (labelIntersects.length > 0) {
+                     hoveredLabel = labelIntersects[0].object;
+                     animateLabelScale(hoveredLabel, 2.2, 200); // Scale up much bigger and faster
+                     renderer.domElement.style.cursor = 'pointer';
+                 }
+            }
+        }
+        
+        function onMouseClick(event) {
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(clickableObjects);
+            
+            if (intersects.length > 0) {
+                const object = intersects[0].object;
+                
+                // Handle pie chart slice expansion
+                if (object.userData.component) {
+                    expandPieSlice(object);
+                }
+                
+                // Handle timeline scrubber interaction
+                if (object.userData.isDraggable) {
+                    console.log('Timeline scrubber clicked');
+                }
+            }
+        }
+        
+        function expandPieSlice(slice) {
+            const userData = slice.userData;
+            
+            if (!userData.isExpanded) {
+                // Expand the slice upward
+                slice.position.y += 2;
+                slice.scale.set(1.2, 1.2, 1.2);
+                userData.isExpanded = true;
+            } else {
+                // Contract the slice back
+                slice.position.y = userData.originalPosition.y;
+                slice.scale.set(1, 1, 1);
+                userData.isExpanded = false;
+            }
+        }
+        
+        let tooltip = null;
+        
+        function showTooltip(event, userData) {
+            if (!tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.style.position = 'fixed';
+                tooltip.style.background = 'rgba(0, 0, 0, 0.8)';
+                tooltip.style.color = 'white';
+                tooltip.style.padding = '10px';
+                tooltip.style.borderRadius = '5px';
+                tooltip.style.fontSize = '14px';
+                tooltip.style.zIndex = '1000';
+                tooltip.style.pointerEvents = 'none';
+                document.body.appendChild(tooltip);
+            }
+            
+            const comp = userData.component;
+            tooltip.innerHTML = `
+                <strong>${comp.name}</strong><br>
+                $${comp.value.toFixed(0)} (${(userData.percentage * 100).toFixed(1)}%)<br>
+                <em>${comp.description}</em>
+            `;
+            
+            tooltip.style.left = event.clientX + 10 + 'px';
+            tooltip.style.top = event.clientY - 10 + 'px';
+            tooltip.style.display = 'block';
+        }
+        
+        function hideTooltip() {
+            if (tooltip) {
+                tooltip.style.display = 'none';
+            }
+        }
+
+        // Animation loop
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+            
+            // Rotate camera around the scene (slower rotation)
+            const time = Date.now() * 0.0002;
+            camera.position.x = Math.cos(time) * 25;
+            camera.position.z = Math.sin(time) * 25;
+            camera.position.y = 15;
+            camera.lookAt(new THREE.Vector3(0, 5, 0));
+            
+            renderer.render(scene, camera);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Load URL parameters and populate form
+        function loadFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            
+            if (params.has('mode')) {
+                const mode = params.get('mode');
+                
+                if (mode === 'reverse' && params.has('quotedPayment')) {
+                    // Fill reverse calculator data
+                    if (params.has('quotedPayment')) document.getElementById('monthlyPayment').value = params.get('quotedPayment');
+                    if (params.has('msrp')) document.getElementById('msrp').value = params.get('msrp');
+                    if (params.has('rebates')) document.getElementById('rebates').value = params.get('rebates');
+                    if (params.has('residualValue')) document.getElementById('residualValue').value = params.get('residualValue');
+                    if (params.has('leaseTerm')) document.getElementById('leaseTerm').value = params.get('leaseTerm');
+                    if (params.has('salesTax')) document.getElementById('taxRate').value = params.get('salesTax');
+                    
+                    // Auto-calculate after loading
+                    setTimeout(() => {
+                        updateVisualization();
+                    }, 100);
+                    
+                } else if (mode === 'forward' && params.has('msrp')) {
+                    // Fill forward calculator data
+                    if (params.has('msrp')) document.getElementById('msrp').value = params.get('msrp');
+                    if (params.has('residualPercentage')) {
+                        const residualPct = parseFloat(params.get('residualPercentage'));
+                        const msrp = parseFloat(params.get('msrp'));
+                        document.getElementById('residualValue').value = Math.round(msrp * residualPct / 100);
+                    }
+                    if (params.has('leaseTerm')) document.getElementById('leaseTerm').value = params.get('leaseTerm');
+                    if (params.has('rebates')) document.getElementById('rebates').value = params.get('rebates');
+                    if (params.has('salesTax')) document.getElementById('taxRate').value = params.get('salesTax');
+                    
+                    // Set dummy quoted payment and auto-calculate
+                    const msrp = parseFloat(params.get('msrp'));
+                    const estimatedPayment = Math.round(msrp * 0.01); // Rough estimate for calculation
+                    document.getElementById('monthlyPayment').value = estimatedPayment;
+                    
+                    setTimeout(() => {
+                        updateVisualization();
+                    }, 100);
+                }
+            }
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            init();
+            loadFromURL();
+        });
+    </script>
+    <!-- Unobtrusive disclaimer and math explanation -->
+    <details id="vizDisclaimer" style="font-size: 11px; text-align:center; max-width:900px; margin:30px auto 40px; color:#555;">
+        <summary style="cursor:pointer; outline:none;">ℹ️ About these calculations & disclaimer</summary>
+        <div style="text-align:left; padding:8px 14px; line-height:1.4;">
+            <p><strong>How the math works (summary)</strong></p>
+            <ul style="margin-top:4px; margin-bottom:6px; padding-left:18px;">
+                <li>Monthly Depreciation = (Cap&nbsp;Cost − Residual) ÷ Term</li>
+                <li>Monthly Finance = (Cap&nbsp;Cost + Residual) × Money&nbsp;Factor</li>
+                <li>Base Payment = Depreciation + Finance</li>
+                <li>APR = Money Factor × 2400</li>
+            </ul>
+            <p style="margin-top:8px;">This visualizer uses the <em>same math</em> as the main calculator. If you provide the <strong>Total Lease Charge</strong> or <strong>APR</strong> we display exact values; otherwise we display an estimate based on typical lease rates.</p>
+            <p style="font-size:10px; margin-top:14px;">Disclaimer: Graphics and figures are illustrative. Always verify numbers with the official lease worksheet or contract.</p>
+        </div>
+    </details>
+</body>
+</html> 

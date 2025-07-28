@@ -1,0 +1,10 @@
+{
+  "name": "love-it-and-lease-it-v2",
+  "version": "2.0.0",
+  "description": "Car lease calculator & visualizer",
+  "scripts": {
+    "dev": "npx http-server . -p 8080 -c-1 -o",
+    "test": "node verifyLeaseMath.js"
+  },
+  "license": "MIT"
+}

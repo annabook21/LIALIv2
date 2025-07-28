@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Love It and Lease It - Reverse Lease Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .mode-toggle {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .mode-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 5px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn.active {
+            background: white;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .calculator-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .mode-description {
+            background: #e8f2ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .mode-description h3 {
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #5a6fd8;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .results {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .result-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .result-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+            font-weight: 600;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 2px solid #667eea;
+        }
+
+        .big-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .mode-toggle {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .mode-btn {
+                margin: 5px 0;
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Love It and Lease It</h1>
+            <p>Reverse Lease Calculator - Catch Dealer Markups</p>
+        </div>
+
+        <div class="mode-toggle">
+            <button class="mode-btn active" onclick="switchMode('reverse')">🕵️ Reverse Calculator</button>
+            <button class="mode-btn" onclick="switchMode('forward')">📊 Standard Calculator</button>
+        </div>
+
+        <div class="calculator-card">
+            <!-- Reverse Calculator Mode -->
+            <div id="reverse-mode" class="calculator-mode">
+                <div class="mode-description">
+                    <h3>🕵️ Dealer Quote Analyzer</h3>
+                    <p><strong>Perfect for the dealership!</strong> Dealer says "This car leases for $450/month"? Enter that quote and we'll reverse-calculate their APR and effective selling price. No more "don't worry about the rate" BS!</p>
+                </div>
+
+                <form id="reverseForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="quotedPayment">Their Monthly Payment Quote ($)</label>
+                            <input type="number" id="quotedPayment" required step="1" placeholder="Enter their monthly payment quote">
+                            <div class="help-text">The monthly payment the dealer quoted you</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="r_msrp">MSRP ($)</label>
+                            <input type="number" id="r_msrp" required step="1" placeholder="Enter MSRP">
+                            <div class="help-text">Sticker price (you can find this)</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="r_rebates">Rebates/Incentives ($)</label>
+                            <input type="number" id="r_rebates" step="1" value="0" min="0" placeholder="Enter rebates if any">
+                            <div class="help-text">Manufacturer rebates (published online)</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="r_downPayment">Down Payment ($)</label>
+                            <input type="number" id="r_downPayment" step="1" value="0" min="0" placeholder="Enter down payment">
+                            <div class="help-text">Cash you're putting down (often $0 for leases)</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="r_residualValue">Residual Value ($)</label>
+                            <input type="number" id="r_residualValue" required step="1" placeholder="Enter residual value">
+                            <div class="help-text">What you'd pay to buy it at lease end (in your lease contract)</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="r_aprOverride">APR % (Optional)</label>
+                            <input type="number" id="r_aprOverride" step="0.01" min="0" max="25" placeholder="If dealer mentioned APR/rate">
+                            <div class="help-text"><strong>Optional:</strong> If they said "You qualified for X% APR". Solves ambiguity.</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="r_rentCharge">Total Lease Charge (Optional)</label>
+                            <input type="number" id="r_rentCharge" step="1" min="0" placeholder="From lease contract">
+                            <div class="help-text"><strong>BEST OPTION:</strong> Total finance/rent charge from the agreement. The most accurate way to solve.</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="r_leaseTerm">Lease Term</label>
+                            <select id="r_leaseTerm" required>
+                                <option value="24">24 months</option>
+                                <option value="33">33 months</option>
+                                <option value="36" selected>36 months</option>
+                                <option value="39">39 months</option>
+                                <option value="48">48 months</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="r_state">State</label>
+                            <select id="r_state" required>
+                                <option value="">Select State</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group full-width" style="text-align: center; margin-top: 30px;">
+                            <button type="submit" class="btn">🔍 Analyze Their Quote</button>
+                            <button type="button" onclick="loadReverseExample()" class="btn btn-secondary" style="margin-left: 10px;">Load Example</button>
+                        </div>
+                    </div>
+                </form>
+
+                <div id="reverseResults" class="results">
+                    <div id="dealerAnalysis" class="alert"></div>
+                    
+                    <div class="results-grid">
+                        <div class="result-card">
+                            <h3>🎯 What They're Really Charging</h3>
+                            <div class="big-number" id="actualAPR">0.00%</div>
+                            <div style="text-align: center; color: #666;">Effective APR</div>
+                            <div class="result-item">
+                                <span>Money Factor:</span>
+                                <span id="actualMF">0.000000</span>
+                            </div>
+                        </div>
+
+                                                 <div class="result-card">
+                             <h3>💰 Payment Breakdown</h3>
+                             <div class="result-item">
+                                 <span>Depreciation:</span>
+                                 <span id="r_monthlyDepreciation">$0</span>
+                             </div>
+                             <div class="result-item">
+                                 <span>Finance Charge:</span>
+                                 <span id="r_monthlyFinance">$0</span>
+                             </div>
+                             <div class="result-item">
+                                 <span>Before Tax:</span>
+                                 <span id="r_basePayment">$0</span>
+                             </div>
+                             <div class="result-item">
+                                 <span>Their Quote:</span>
+                                 <span id="r_monthlyPayment">$0</span>
+                             </div>
+                             <div class="result-item">
+                                 <span>Residual %:</span>
+                                 <span id="r_residualPercentage">0%</span>
+                             </div>
+                             <div class="result-item">
+                                 <span>Effective Selling Price:</span>
+                                 <span id="r_effectivePrice">$0</span>
+                             </div>
+                             <div class="result-item">
+                                 <span>Discount/Markup:</span>
+                                 <span id="r_discountMarkup">0%</span>
+                             </div>
+                         </div>
+
+                                                 <div class="result-card">
+                             <h3>📊 Market Comparison (2025 Data)</h3>
+                             <div class="result-item">
+                                 <span>Tier 1 (750+ credit):</span>
+                                 <span>2.4% - 5.5%</span>
+                             </div>
+                             <div class="result-item">
+                                 <span>Tier 2-3 (640-750):</span>
+                                 <span>5.5% - 8.5%</span>
+                             </div>
+                             <div class="result-item">
+                                 <span>Their Quote:</span>
+                                 <span id="theirAPRDisplay">0.00%</span>
+                             </div>
+                             <div style="font-size: 11px; color: #666; margin-top: 8px; text-align: center;">
+                                 Source: 2025 captive lender buy rates
+                             </div>
+                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Forward Calculator Mode -->
+            <div id="forward-mode" class="calculator-mode" style="display: none;">
+                <div class="mode-description">
+                    <h3>📊 Standard Lease Calculator</h3>
+                    <p>Calculate lease payments when you know the interest rate. Good for planning and comparison shopping.</p>
+                </div>
+
+                <form id="forwardForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="f_msrp">MSRP ($)</label>
+                            <input type="number" id="f_msrp" required step="1" placeholder="Enter MSRP">
+                            <div class="help-text">Manufacturer's suggested retail price</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="f_sellingPrice">Negotiated Price ($)</label>
+                            <input type="number" id="f_sellingPrice" required step="1" placeholder="Enter negotiated price">
+                            <div class="help-text">Price after negotiation, before rebates</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="f_residualValue">Residual Value ($)</label>
+                            <input type="number" id="f_residualValue" required step="1" placeholder="Enter residual value">
+                            <div class="help-text">Expected value at lease end (typically 50-65% of MSRP)</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="f_apr">APR (%)</label>
+                            <input type="number" id="f_apr" step="0.01" min="0" max="25" placeholder="Enter APR">
+                            <div class="help-text">Annual percentage rate</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="f_leaseTerm">Lease Term</label>
+                            <select id="f_leaseTerm" required>
+                                <option value="24">24 months</option>
+                                <option value="33">33 months</option>
+                                <option value="36" selected>36 months</option>
+                                <option value="39">39 months</option>
+                                <option value="48">48 months</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="f_state">State</label>
+                            <select id="f_state" required>
+                                <option value="">Select State</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group full-width" style="text-align: center; margin-top: 30px;">
+                            <button type="submit" class="btn">Calculate Payment</button>
+                            <button type="button" onclick="loadForwardExample()" class="btn btn-secondary" style="margin-left: 10px;">Load Example</button>
+                        </div>
+                    </div>
+                </form>
+
+                <div id="forwardResults" class="results">
+                    <div class="results-grid">
+                        <div class="result-card">
+                            <h3>Monthly Payment</h3>
+                            <div class="big-number" id="f_monthlyPayment">$0</div>
+                            <div class="result-item">
+                                <span>Depreciation:</span>
+                                <span id="f_monthlyDepreciation">$0</span>
+                            </div>
+                            <div class="result-item">
+                                <span>Finance Charge:</span>
+                                <span id="f_monthlyFinance">$0</span>
+                            </div>
+                        </div>
+
+                                                 <div class="result-card">
+                             <h3>Lease Details</h3>
+                             <div class="result-item">
+                                 <span>Capitalized Cost:</span>
+                                 <span id="f_capitalizedCost">$0</span>
+                             </div>
+                                                         <div class="result-item">
+                                <span>Residual Value:</span>
+                                <span id="f_residualValueDisplay">$0</span>
+                            </div>
+                             <div class="result-item">
+                                 <span>Residual %:</span>
+                                 <span id="f_residualPercentage">0%</span>
+                             </div>
+                             <div class="result-item">
+                                 <span>Money Factor:</span>
+                                 <span id="f_displayMF">0.000000</span>
+                             </div>
+                         </div>
+
+                        <div class="result-card">
+                            <h3>Total Cost</h3>
+                            <div class="result-item">
+                                <span>Total Payments:</span>
+                                <span id="f_totalPayments">$0</span>
+                            </div>
+                            <div class="result-item">
+                                <span>Total Lease Cost:</span>
+                                <span id="f_totalLeaseCost">$0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="#" onclick="openVisualizerWithData()" style="display: inline-flex; align-items: center; gap: 8px; color: white; text-decoration: none; background: rgba(255,255,255,0.2); padding: 12px 20px; border-radius: 6px; transition: background 0.3s ease; cursor: pointer;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+            🎯 Visualize Your Deal in 3D
+        </a>
+    </div>
+
+    <!-- Load existing calculation scripts -->
+    <script src="leaseCalculator.js"></script>
+    
+    <script>
+        // State tax rates - defined here so it's available immediately
+        const stateTaxRates = {
+            "Alabama": 2.00, "Alaska": 0.00, "Arizona": 5.60, "Arkansas": 6.50, "California": 7.25,
+            "Colorado": 2.90, "Connecticut": 6.35, "Delaware": 0.00, "Florida": 6.00, "Georgia": 7.00,
+            "Hawaii": 4.00, "Idaho": 6.00, "Illinois": 7.25, "Indiana": 7.00, "Iowa": 5.00,
+            "Kansas": 6.50, "Kentucky": 6.00, "Louisiana": 4.45, "Maine": 5.50, "Maryland": 6.00,
+            "Massachusetts": 6.25, "Michigan": 6.00, "Minnesota": 6.88, "Mississippi": 5.00, "Missouri": 4.23,
+            "Montana": 0.00, "Nebraska": 5.50, "Nevada": 8.25, "New Hampshire": 0.00, "New Jersey": 6.63,
+            "New Mexico": 4.00, "New York": 4.00, "North Carolina": 3.00, "North Dakota": 5.00, "Ohio": 5.75,
+            "Oklahoma": 3.25, "Oregon": 0.00, "Pennsylvania": 6.00, "Rhode Island": 7.00, "South Carolina": 5.00,
+            "South Dakota": 4.00, "Tennessee": 7.00, "Texas": 6.25, "Utah": 6.85, "Vermont": 6.00,
+            "Virginia": 4.15, "Washington": 6.50, "West Virginia": 6.00, "Wisconsin": 5.00, "Wyoming": 4.00
+        };
+
+        // Populate state dropdowns
+        function populateStateDropdowns() {
+            const dropdowns = ['r_state', 'f_state'];
+            const sortedStates = Object.entries(stateTaxRates).sort((a, b) => a[0].localeCompare(b[0]));
+
+            dropdowns.forEach(dropdownId => {
+                const dropdown = document.getElementById(dropdownId);
+                if (dropdown) {
+                    // Clear existing options except the first one
+                    while (dropdown.children.length > 1) {
+                        dropdown.removeChild(dropdown.lastChild);
+                    }
+                    
+                    for (const [state, rate] of sortedStates) {
+                        const option = document.createElement("option");
+                        option.value = state;
+                        option.text = `${state} (${rate}% tax)`;
+                        dropdown.appendChild(option);
+                    }
+                }
+            });
+        }
+
+        // Switch between reverse and forward modes
+        function switchMode(mode) {
+            const reverseMode = document.getElementById('reverse-mode');
+            const forwardMode = document.getElementById('forward-mode');
+            const buttons = document.querySelectorAll('.mode-btn');
+            
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            if (mode === 'reverse') {
+                reverseMode.style.display = 'block';
+                forwardMode.style.display = 'none';
+                buttons[0].classList.add('active');
+            } else {
+                reverseMode.style.display = 'none';
+                forwardMode.style.display = 'block';
+                buttons[1].classList.add('active');
+            }
+        }
+
+        // Reverse calculator - find APR from monthly payment (ITERATIVE SOLUTION)
+        function calculateReverse(quotedPayment, msrp, rebates, downPayment, residualValue, leaseTerm, salesTaxRate, aprOverride = null, rentCharge = null) {
+            // Input validation and edge case handling
+            if (msrp <= 0) msrp = 1; // Prevent division by zero
+            if (leaseTerm <= 0) leaseTerm = 1; // Prevent division by zero
+            if (quotedPayment < 0) quotedPayment = 0; // Handle negative payments
+            if (salesTaxRate < 0) salesTaxRate = 0; // Handle negative tax
+            if (salesTaxRate > 200) salesTaxRate = 200; // Cap extreme tax rates
+            
+            const residualPercentage = (residualValue / msrp * 100).toFixed(1);
+            
+            // Remove tax from quoted payment to get base payment
+            const basePayment = quotedPayment / (1 + salesTaxRate / 100);
+            console.log('MAIN CALC - Inputs:', {quotedPayment, msrp, rebates, downPayment, residualValue, leaseTerm, salesTaxRate});
+            console.log('MAIN CALC - Base payment:', basePayment);
+            
+            let capitalizedCost, moneyFactor, calculationMethod;
+            
+            if (rentCharge && rentCharge > 0) {
+                // SUPERIOR DIRECT CALCULATION - Rent charge is known
+                const monthlyFinanceCharge = rentCharge / leaseTerm;
+                
+                // Back-solve for capitalized cost
+                // basePayment = (capCost - residual)/term + monthlyFinance
+                // capCost = (basePayment - monthlyFinance) * term + residual
+                capitalizedCost = (basePayment - monthlyFinanceCharge) * leaseTerm + residualValue;
+                
+                // Now calculate the exact money factor
+                moneyFactor = monthlyFinanceCharge / (capitalizedCost + residualValue);
+                calculationMethod = "Direct (from Rent Charge - most accurate)";
+
+            } else if (aprOverride && aprOverride > 0) {
+                // DIRECT CALCULATION - APR is known, solve for capitalized cost
+                moneyFactor = aprOverride / 2400;
+                
+                // Calculate capitalized cost directly using known money factor
+                capitalizedCost = (basePayment - residualValue * (moneyFactor - 1/leaseTerm)) / (1/leaseTerm + moneyFactor);
+                calculationMethod = "Direct (from APR)";
+                
+            } else {
+                // ITERATIVE SOLUTION - search within realistic lease APR ranges
+                let bestMF = 0.003;  // Start with 7.2% APR as default
+                let bestError = Infinity;
+                let bestCapCost = 0;
+                
+                        // Test money factors from 0.0004 to 0.0125 (1.0% to 30.0% APR - wider range for edge cases)
+        // Use finer increments for better accuracy
+        for (let mf = 0.0004; mf <= 0.0125; mf += 0.00005) {
+            // Skip unrealistic rates but allow wider range for edge cases
+            const apr = mf * 2400;
+            if (apr < 1.0 || apr > 30.0) continue;
+                    
+                    // Calculate what capitalized cost would give us this payment at this MF
+                    const capCost = (basePayment - residualValue * (mf - 1/leaseTerm)) / (1/leaseTerm + mf);
+                    
+                                // Skip if capitalized cost is unrealistic (but be more flexible for edge cases)
+            if (capCost < (msrp * 0.3) || capCost > (msrp * 2.0)) continue;
+                    
+                    // Calculate what payment this capCost and MF would actually produce
+                    const calcDepreciation = (capCost - residualValue) / leaseTerm;
+                    const calcFinance = (capCost + residualValue) * mf;
+                    const calcPayment = calcDepreciation + calcFinance;
+                    
+                    // How close is this to our target payment?
+                    const error = Math.abs(calcPayment - basePayment);
+                    
+                    // Prefer more typical lease APRs (3.0% - 8.0%) by giving them bonus and penalize unrealistic low/high rates
+                    let aprPenaltyMultiplier = 1;
+                    if (apr < 2.4 || apr > 10) {
+                        aprPenaltyMultiplier = 2;        // Strong penalty outside realistic band
+                    } else if (apr < 3.0 || apr > 8.0) {
+                        aprPenaltyMultiplier = 1.3;      // Mild penalty on the edges
+                    }
+
+                    // Penalize heavy mark-ups above MSRP (after rebates and DP) to avoid absurdly low APR solutions
+                    const projectedSellingPrice = capCost + downPayment + rebates;
+                    let markupPenalty = 1;
+                    if (projectedSellingPrice > msrp * 1.05) { // more than 5% above MSRP
+                        markupPenalty += (projectedSellingPrice - msrp * 1.05) / msrp; // linear penalty
+                    }
+
+                    const adjustedError = error * aprPenaltyMultiplier * markupPenalty;
+                    
+                    // Store best candidate based on adjusted error
+                    if (adjustedError < bestError) {
+                        bestError = adjustedError;  // Note: store adjusted error for comparison
+                        bestMF = mf;
+                        bestCapCost = capCost;
+                    }
+                }
+                
+                // Use the best fit we found, with fallback if no valid solution
+                if (bestError === Infinity) {
+                    // No valid solution found, use fallback calculation
+                    moneyFactor = 0.003; // Default 7.2% APR
+                    capitalizedCost = Math.max(basePayment * leaseTerm + residualValue, msrp * 0.5);
+                    calculationMethod = "Iterative (fallback estimate - data may be incompatible)";
+                } else {
+                    capitalizedCost = bestCapCost;
+                    moneyFactor = bestMF;
+                    calculationMethod = "Iterative (estimated - provide APR or Total Lease Charge for accuracy)";
+                    
+                    console.log('MAIN CALC - Best iterative solution:', {
+                        bestMF,
+                        bestAPR: bestMF * 2400,
+                        bestCapCost,
+                        bestError,
+                        effectiveSellingPrice: bestCapCost + downPayment + rebates
+                    });
+                }
+            }
+
+            // Calculate preliminary APR from chosen money factor (used in heuristics below)
+            let aprPre = moneyFactor * 2400;
+
+            // --- Heuristic: if iterative result produced unrealistically low APR but high markup, assume markup is really interest ---
+            if (calculationMethod.startsWith('Iterative') && aprPre < 2.4 && (capitalizedCost + downPayment + rebates) > msrp) {
+                const assumedCapCost = Math.max(msrp - rebates - downPayment, msrp * 0.9); // assume no markup, maybe small discount
+                const numerator = basePayment - (assumedCapCost - residualValue) / leaseTerm;
+                const denominator = assumedCapCost + residualValue;
+                const mfFromAssumed = numerator / denominator;
+                if (mfFromAssumed > 0 && mfFromAssumed <= 0.0125) {
+                    moneyFactor = mfFromAssumed;
+                    capitalizedCost = assumedCapCost;
+                    calculationMethod = 'Assumed MSRP (APR soaks markup)';
+                    aprPre = moneyFactor * 2400; // update
+                }
+            }
+            
+            // --- Post-adjustment: if rebates exist and resulting selling price exceeds MSRP,
+            // re-compute money factor assuming dealer selling price = MSRP (no markup).
+            if (rebates > 0) {
+                const testCapCost = msrp - rebates - downPayment;
+                if (testCapCost > 0) {
+                    const testMF = (basePayment - (testCapCost - residualValue) / leaseTerm) / (testCapCost + residualValue);
+                    const testAPR = testMF * 2400;
+                    if (testMF > 0.0004 && testMF < 0.0125 && testAPR >= 1 && testAPR <= 30) {
+                        // Use this alternative if it reduces or eliminates markup
+                        const altSellingPrice = msrp; // by construction
+                        const currentSelling = capitalizedCost + downPayment + rebates;
+                        if (altSellingPrice <= msrp && altSellingPrice < currentSelling) {
+                            moneyFactor = testMF;
+                            capitalizedCost = testCapCost;
+                            aprPre = testAPR;
+                            calculationMethod = 'Rebate-adjusted (assumed MSRP)';
+                        }
+                    }
+                }
+            }
+
+            // Calculate final values using the determined capitalized cost and money factor
+            const monthlyDepreciation = (capitalizedCost - residualValue) / leaseTerm;
+            const financeCharge = basePayment - monthlyDepreciation;
+            const apr = aprPre;
+            
+            // Calculate what this means for the actual selling price (before rebates and down payment)
+            const effectiveSellingPrice = capitalizedCost + downPayment + rebates;
+            const effectiveDiscount = ((msrp - effectiveSellingPrice) / msrp * 100);
+            const markup = Math.max(0, effectiveSellingPrice - msrp); // Amount above MSRP
+
+            const dealerDiscountPct = ((msrp - (capitalizedCost + downPayment + rebates)) / msrp * 100);
+            
+            return {
+                apr: apr,
+                moneyFactor: moneyFactor,
+                monthlyDepreciation: monthlyDepreciation,
+                financeCharge: financeCharge,
+                basePayment: basePayment,
+                capitalizedCost: capitalizedCost,
+                effectiveSellingPrice: effectiveSellingPrice,
+                residualValue: residualValue,
+                residualPercentage: residualPercentage,
+                effectiveDiscount: effectiveDiscount,
+                dealerDiscountPct: dealerDiscountPct,
+                rebates: rebates,
+                markup: markup,
+                isMarkup: effectiveSellingPrice > msrp,
+                calculationMethod: calculationMethod
+            };
+        }
+
+        // Analyze deal quality using 2024/2025 lease market data
+        function analyzeDeal(apr) {
+            if (apr < 2.4) {
+                return {
+                    type: 'success',
+                    message: '🎉 Excellent Deal! This APR is exceptional - well below typical Tier 1 lease rates (2.4%-5.5%).',
+                    source: 'Based on 2024/2025 captive lender lease money factor data'
+                };
+            } else if (apr <= 5.5) {
+                return {
+                    type: 'success', 
+                    message: '✅ Good Deal! This APR is competitive for Tier 1 credit (2.4%-5.5% range) in current market.',
+                    source: 'Tier 1 lease rate: 750+ credit score (2024/2025)'
+                };
+            } else if (apr <= 8.5) {
+                return {
+                    type: 'warning',
+                    message: '⚠️ Fair Deal. This APR falls in Tier 2-3 range (5.5%-8.5%). You might negotiate better with good credit.',
+                    source: 'Tier 2-3 lease rate: 640-750 credit score (2024/2025)'
+                };
+            } else if (apr <= 12.0) {
+                return {
+                    type: 'warning',
+                    message: '🔶 High APR. This is Tier 4 pricing (8.5%-12%). Shop around or check for dealer markup.',
+                    source: 'Tier 4 lease rate: 580-640 credit score (2024/2025)'
+                };
+            } else {
+                return {
+                    type: 'danger',
+                    message: '🚨 Very High APR! Above 12% suggests subprime lending or significant dealer markup.',
+                    source: 'Above typical lease market rates for all credit tiers'
+                };
+            }
+        }
+
+        // Update reverse results
+        function updateReverseResults(results) {
+            const resultsContainer = document.getElementById('reverseResults');
+            
+            // First, hide results briefly to indicate calculation is happening
+            resultsContainer.classList.remove('show');
+            
+            // Add a brief delay and visual feedback for the update
+            setTimeout(() => {
+                const analysis = analyzeDeal(results.apr);
+
+                // If markup exists, override the headline assessment
+                if (results.isMarkup) {
+                    analysis.type = 'warning';
+                    analysis.message = '⚠️ APR looks attractive, but the dealer is charging above MSRP – check the markup warning below.';
+                    analysis.source += ' • Adjusted for markup';
+                }
+                
+                // Red markup banner removed per user request. You can still see markup amount highlighted in the table below.
+                const markupWarning = '';
+                
+                // Show analysis alert
+                const alertDiv = document.getElementById('dealerAnalysis');
+                alertDiv.className = `alert alert-${analysis.type}`;
+                alertDiv.innerHTML = `
+                    ${analysis.message}
+                    <div style="font-size: 11px; color: #666; margin-top: 8px; font-style: italic;">
+                        ${analysis.source}<br>
+                        Calculation: ${results.calculationMethod}
+                    </div>
+                    <!-- markup banner removed -->
+                `;
+                
+                // Update main results
+                document.getElementById('actualAPR').textContent = results.apr.toFixed(2) + '%';
+                document.getElementById('actualMF').textContent = results.moneyFactor.toFixed(6);
+                document.getElementById('theirAPRDisplay').textContent = results.apr.toFixed(2) + '%';
+                
+                document.getElementById('r_monthlyDepreciation').textContent = '$' + results.monthlyDepreciation.toFixed(0);
+                document.getElementById('r_monthlyFinance').textContent = '$' + results.financeCharge.toFixed(0);
+                document.getElementById('r_basePayment').textContent = '$' + results.basePayment.toFixed(0);
+                document.getElementById('r_monthlyPayment').textContent = '$' + document.getElementById('quotedPayment').value;
+                document.getElementById('r_residualPercentage').textContent = results.residualPercentage + '%';
+                document.getElementById('r_effectivePrice').textContent = '$' + results.effectiveSellingPrice.toFixed(0);
+                
+                // Show discount or markup
+                const discEl = document.getElementById('r_discountMarkup');
+
+                if (results.isMarkup) {
+                    discEl.textContent = '+$' + results.markup.toFixed(0) + ' markup';
+                    discEl.style.color = '#d32f2f';
+                } else {
+                    // Show dealer discount vs factory rebate split
+                    const dealerDisc = results.dealerDiscountPct;
+                    const rebatePct = (parseFloat(document.getElementById('r_rebates').value) || 0) / parseFloat(document.getElementById('r_msrp').value) * 100;
+                    let msg = '';
+                    if (dealerDisc <= 0.1) {
+                        msg = '0% dealer discount';
+                    } else {
+                        msg = dealerDisc.toFixed(1) + '% dealer discount';
+                    }
+                    if (rebatePct > 0.1) {
+                        msg += ' + ' + rebatePct.toFixed(1) + '% rebates';
+                    }
+                    discEl.textContent = msg;
+                    discEl.style.color = '#388e3c';
+                }
+                
+                // Show results with updated content
+                resultsContainer.classList.add('show');
+                
+                // Add a brief highlight to indicate fresh results
+                resultsContainer.style.transition = 'background-color 0.5s ease';
+                resultsContainer.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+                setTimeout(() => {
+                    resultsContainer.style.backgroundColor = '';
+                }, 500);
+                
+            }, 150); // Brief delay to show the update is happening
+        }
+
+        // Update forward results
+        function updateForwardResults(results) {
+            const resultsContainer = document.getElementById('forwardResults');
+            
+            // First, hide results briefly to indicate calculation is happening
+            resultsContainer.classList.remove('show');
+            
+            // Add a brief delay and visual feedback for the update
+            setTimeout(() => {
+                document.getElementById('f_monthlyPayment').textContent = '$' + results.monthlyPaymentWithTax.toFixed(0);
+                document.getElementById('f_monthlyDepreciation').textContent = '$' + results.monthlyDepreciation.toFixed(0);
+                document.getElementById('f_monthlyFinance').textContent = '$' + results.monthlyFinanceCharge.toFixed(0);
+                document.getElementById('f_capitalizedCost').textContent = '$' + results.capitalizedCost.toFixed(0);
+                document.getElementById('f_residualValueDisplay').textContent = '$' + results.residualValue.toFixed(0);
+                document.getElementById('f_residualPercentage').textContent = ((results.residualValue / parseFloat(document.getElementById('f_msrp').value)) * 100).toFixed(1) + '%';
+                document.getElementById('f_displayMF').textContent = results.moneyFactor.toFixed(6);
+                document.getElementById('f_totalPayments').textContent = '$' + results.totalOfPayments.toFixed(0);
+                document.getElementById('f_totalLeaseCost').textContent = '$' + results.totalLeaseCost.toFixed(0);
+                
+                // Show results with updated content
+                resultsContainer.classList.add('show');
+                
+                // Add a brief highlight to indicate fresh results
+                resultsContainer.style.transition = 'background-color 0.5s ease';
+                resultsContainer.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+                setTimeout(() => {
+                    resultsContainer.style.backgroundColor = '';
+                }, 500);
+                
+            }, 150); // Brief delay to show the update is happening
+        }
+
+        // Load example data
+                         function loadReverseExample() {
+            document.getElementById('quotedPayment').value = '450';
+            document.getElementById('r_msrp').value = '35000';
+            document.getElementById('r_rebates').value = '1000';
+            document.getElementById('r_downPayment').value = '0';
+            document.getElementById('r_residualValue').value = '21000';
+            document.getElementById('r_aprOverride').value = '';
+            document.getElementById('r_rentCharge').value = '';
+            document.getElementById('r_state').value = 'California';
+        }
+
+        function getStateTaxRate(stateName) {
+            return stateTaxRates[stateName] || 0;
+        }
+
+        function openVisualizerWithData() {
+            // Get current values from active calculator
+            const reverseMode = document.getElementById('reverse-mode');
+            const isReverse = reverseMode.style.display !== 'none';
+            
+            let params = new URLSearchParams();
+            
+            if (isReverse) {
+                // Pass reverse calculator data
+                const quotedPayment = document.getElementById('quotedPayment').value;
+                const msrp = document.getElementById('r_msrp').value;
+                const rebates = document.getElementById('r_rebates').value || '0';
+                const downPayment = document.getElementById('r_downPayment').value || '0';
+                const residualValue = document.getElementById('r_residualValue').value;
+                const leaseTerm = document.getElementById('r_leaseTerm').value;
+                const salesTax = getStateTaxRate(document.getElementById('r_state').value);
+                const aprOverride = document.getElementById('r_aprOverride').value;
+                const rentCharge = document.getElementById('r_rentCharge').value;
+                
+                if (quotedPayment && msrp && residualValue && leaseTerm) {
+                    params.set('quotedPayment', quotedPayment);
+                    params.set('msrp', msrp);
+                    params.set('rebates', rebates);
+                    params.set('downPayment', downPayment);
+                    params.set('residualValue', residualValue);
+                    params.set('leaseTerm', leaseTerm);
+                    params.set('salesTax', salesTax);
+                    if (aprOverride) params.set('aprOverride', aprOverride);
+                    if (rentCharge) params.set('rentCharge', rentCharge);
+                    params.set('mode', 'reverse');
+                }
+            } else {
+                // Pass forward calculator data
+                const msrp = document.getElementById('f_msrp').value;
+                const sellingPrice = document.getElementById('f_sellingPrice').value;
+                const residualPercentage = document.getElementById('f_residualPercentage').value;
+                const moneyFactor = document.getElementById('f_moneyFactor').value;
+                const leaseTerm = document.getElementById('f_leaseTerm').value;
+                const rebates = document.getElementById('f_rebates').value || '0';
+                const salesTax = getStateTaxRate(document.getElementById('f_state').value);
+                
+                if (msrp && sellingPrice && residualPercentage && moneyFactor && leaseTerm) {
+                    params.set('msrp', msrp);
+                    params.set('sellingPrice', sellingPrice);
+                    params.set('residualPercentage', residualPercentage);
+                    params.set('moneyFactor', moneyFactor);
+                    params.set('leaseTerm', leaseTerm);
+                    params.set('rebates', rebates);
+                    params.set('salesTax', salesTax);
+                    params.set('mode', 'forward');
+                }
+            }
+            
+            // Open visualizer (with data if available, empty if not)
+            const url = params.toString() ? `lease-visualizer.html?${params.toString()}` : 'lease-visualizer.html';
+            window.open(url, '_blank');
+        }
+
+         function loadForwardExample() {
+             document.getElementById('f_msrp').value = '35000';
+             document.getElementById('f_sellingPrice').value = '33000';
+             document.getElementById('f_residualValue').value = '21000';
+             document.getElementById('f_apr').value = '2.4';
+             document.getElementById('f_state').value = 'California';
+         }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            populateStateDropdowns();
+            
+            // Reverse calculator form
+            document.getElementById('reverseForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                                 const quotedPayment = parseFloat(document.getElementById('quotedPayment').value);
+                 const msrp = parseFloat(document.getElementById('r_msrp').value);
+                 const rebates = parseFloat(document.getElementById('r_rebates').value) || 0;
+                 const downPayment = parseFloat(document.getElementById('r_downPayment').value) || 0;
+                 const residualValue = parseFloat(document.getElementById('r_residualValue').value);
+                 const aprOverride = parseFloat(document.getElementById('r_aprOverride').value) || null;
+                 const leaseTerm = parseInt(document.getElementById('r_leaseTerm').value);
+                 const state = document.getElementById('r_state').value;
+                 const salesTaxRate = stateTaxRates[state];
+                 const rentCharge = parseFloat(document.getElementById('r_rentCharge').value) || null;
+                 
+                 try {
+                     const results = calculateReverse(quotedPayment, msrp, rebates, downPayment, residualValue, leaseTerm, salesTaxRate, aprOverride, rentCharge);
+                     updateReverseResults(results);
+                 } catch (error) {
+                     alert('Calculation error: ' + error.message);
+                 }
+            });
+            
+            // Forward calculator form
+            document.getElementById('forwardForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                                 const msrp = parseFloat(document.getElementById('f_msrp').value);
+                 const sellingPrice = parseFloat(document.getElementById('f_sellingPrice').value);
+                 const residualValue = parseFloat(document.getElementById('f_residualValue').value);
+                 const residualPercentage = (residualValue / msrp * 100); // Calculate it ourselves!
+                 const apr = parseFloat(document.getElementById('f_apr').value);
+                 const leaseTerm = parseInt(document.getElementById('f_leaseTerm').value);
+                 const state = document.getElementById('f_state').value;
+                 const salesTaxRate = stateTaxRates[state];
+                 
+                 try {
+                     const results = calculateLeasePayment({
+                         msrp,
+                         sellingPrice,
+                         residualPercentage,
+                         apr,
+                         leaseTerm,
+                         downPayment: 0,
+                         rebates: 0,
+                         salesTaxRate,
+                         taxMethod: 'monthly',
+                         acquisitionFee: 0,
+                         securityDeposit: 0,
+                         registrationFees: 0,
+                         docFees: 0
+                     });
+                     
+                     updateForwardResults(results);
+                 } catch (error) {
+                     alert('Calculation error: ' + error.message);
+                 }
+            });
+            
+                    // Don't auto-load example data - user should enter their own values
+        });
+    </script>
+    <!-- Unobtrusive disclaimer and math explanation -->
+    <details id="calcDisclaimer" style="font-size: 11px; text-align:center; max-width:850px; margin:40px auto; color:#555;">
+        <summary style="cursor:pointer; outline:none;">ℹ️ About these calculations & disclaimer</summary>
+        <div style="text-align:left; padding:8px 14px; line-height:1.4;">
+            <p><strong>How the math works</strong></p>
+            <ul style="margin-top:4px; margin-bottom:6px; padding-left:18px;">
+                <li>Monthly Depreciation = (Capitalized Cost − Residual&nbsp;Value) ÷ Lease&nbsp;Term</li>
+                <li>Monthly Finance Charge = (Capitalized Cost + Residual&nbsp;Value) × Money&nbsp;Factor</li>
+                <li>Base Monthly Payment = Depreciation + Finance&nbsp;Charge</li>
+                <li>Sales-taxed Payment = Base Payment × (1 + Tax&nbsp;Rate)</li>
+                <li>Total Lease Charge ("Rent Charge") = Monthly Finance Charge × Term</li>
+                <li>APR (%) = Money Factor × 2400</li>
+            </ul>
+            <p style="margin-top:10px;">Calculation paths:<br>
+            • <em>Direct</em> – If you enter the <strong>Total Lease Charge</strong> <u>or</u> the dealer-quoted <strong>APR</strong>, the result is exact.<br>
+            • <em>Iterative estimate</em> – If neither is supplied, the app finds the lowest realistic APR that balances the payment; this is an <strong>educated estimate</strong>, not a guaranteed rate.</p>
+            <p style="font-size:10px; margin-top:14px;">Disclaimer: This tool is for educational use only. Calculations are based on industry-standard lease formulas and the numbers you provide. Programs, fees and taxes differ by lender and jurisdiction; always confirm figures with your dealer or finance office before signing any contract.</p>
+        </div>
+    </details>
+</body>
+</html>
